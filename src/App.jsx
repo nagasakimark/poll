@@ -4,280 +4,377 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Bar, Pie } from "react-chartjs-2";
 import { Chart, registerables } from "chart.js";
-Chart.register(...registerables);
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+
+// Import vegetable images
+import cabbageImg from './assets/vegetables/cabbages.png';
+import carrotImg from './assets/vegetables/carrots.png';
+import cornImg from './assets/vegetables/corn.png';
+import mushroomImg from './assets/vegetables/mushrooms.png';
+import onionImg from './assets/vegetables/onions.png';
+import peaImg from './assets/vegetables/peas.png';
+import pepperImg from './assets/vegetables/peppers.png';
+import potatoImg from './assets/vegetables/potatoes.png';
+import pumpkinImg from './assets/vegetables/pumpkins.png';
+import tomatoImg from './assets/vegetables/tomatoes.png';
+
+Chart.register(...registerables, ChartDataLabels);
 
 function App() {
-  const fruits = [
-    { en: "Apples", jp: "りんご", katakana: "アップルズ", icon: "🍎" },
-    { en: "Peaches", jp: "もも", katakana: "ピーチズ", icon: "🍑" },
-    { en: "Bananas", jp: "バナナ", katakana: "バナナズ", icon: "🍌" },
-    { en: "Pears", jp: "なし", katakana: "ペアーズ", icon: "🍐" },
-    { en: "Cherries", jp: "さくらんぼ", katakana: "チェリーズ", icon: "🍒" },
-    { en: "Pineapples", jp: "パイナップル", katakana: "パイナップルズ", icon: "🍍" },
-    { en: "Grapefruits", jp: "グレープフルーツ", katakana: "グレープフルーツズ", icon: "🍊" },
-    { en: "Oranges", jp: "オレンジ", katakana: "オレンジズ", icon: "🍊" },
-    { en: "Grapes", jp: "ぶどう", katakana: "グレープズ", icon: "🍇" },
-    { en: "Strawberries", jp: "いちご", katakana: "ストロベリーズ", icon: "🍓" },
+  const vegetables = [
+    { en: "Cabbages", jp: "キャベツ", katakana: "キャベツ", image: cabbageImg },
+    { en: "Carrots", jp: "にんじん", katakana: "キャロッツ", image: carrotImg },
+    { en: "Corn", jp: "とうもろこし", katakana: "コーン", image: cornImg },
+    { en: "Mushrooms", jp: "きのこ", katakana: "マッシュルームズ", image: mushroomImg },
+    { en: "Onions", jp: "たまねぎ", katakana: "オニオンズ", image: onionImg },
+    { en: "Peas", jp: "えんどうまめ", katakana: "ピーズ", image: peaImg },
+    { en: "Peppers", jp: "ピーマン", katakana: "ペッパーズ", image: pepperImg },
+    { en: "Potatoes", jp: "じゃがいも", katakana: "ポテトズ", image: potatoImg },
+    { en: "Pumpkins", jp: "かぼちゃ", katakana: "パンプキンズ", image: pumpkinImg },
+    { en: "Tomatoes", jp: "トマト", katakana: "トマトズ", image: tomatoImg },
   ];
+  // Vibrant, kid-friendly colors
   const colors = [
-    "#FF6384", "#FFB347", "#FFE135", "#B0E57C", "#FF6F61",
-    "#FFD700", "#FF7F50", "#FFA500", "#8A2BE2", "#FC5A8D"
+    "#90EE90", "#FFA500", "#FFD700", "#D2B48C", "#FFB6C1",
+    "#98FB98", "#FF6347", "#F0E68C", "#FFA07A", "#FF4500"
   ];
-  const [counts, setCounts] = useState(Array(fruits.length).fill(0));
+  const [counts, setCounts] = useState(Array(vegetables.length).fill(0));
   const [graphType, setGraphType] = useState("bar");
   const [finished, setFinished] = useState(false);
   const [exampleIdx, setExampleIdx] = useState(0);
-  const [flyingFruit, setFlyingFruit] = useState(null);
+  const [flyingVegetable, setFlyingVegetable] = useState(null);
   const flyingRef = useRef();
-  // Cycle example fruit every 2 seconds
+
+  // Cycle example vegetable every 3 seconds (slower for kids to read)
   useEffect(() => {
     if (finished) return;
     const interval = setInterval(() => {
-      setExampleIdx(idx => (idx + 1) % fruits.length);
-    }, 2000);
+      setExampleIdx(idx => (idx + 1) % vegetables.length);
+    }, 3000);
     return () => clearInterval(interval);
   }, [finished]);
-  const handleFruitClick = idx => {
+
+  const handleVegetableClick = idx => {
     if (finished) return;
-    setFlyingFruit({ idx, key: Math.random() });
+    setFlyingVegetable({ idx, key: Math.random() });
     setTimeout(() => {
-      setFlyingFruit(null);
+      setFlyingVegetable(null);
       setCounts(counts => {
         const newCounts = [...counts];
         newCounts[idx]++;
         return newCounts;
       });
-    }, 700);
+    }, 1200); // Slightly longer animation for fun
   };
-  // Find all fruits with max votes
+
+  // Find all vegetables with max votes
   const maxVotes = Math.max(...counts);
   const winners = counts
     .map((count, idx) => (count === maxVotes && maxVotes > 0 ? idx : -1))
     .filter(idx => idx !== -1);
+
   const chartData = {
-    labels: fruits.map(f => f.icon + " " + f.en),
+    labels: vegetables.map(v => v.en),
     datasets: [
       {
         label: "Votes",
         data: counts,
         backgroundColor: colors,
+        borderColor: '#fff',
+        borderWidth: 2,
+        borderRadius: 8,
       },
     ],
   };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      if (!document.head.querySelector('style[data-fruit-anim]')) {
+      if (!document.head.querySelector('style[data-veg-anim]')) {
         const style = document.createElement('style');
-        style.innerHTML = `@keyframes flyFruit {
+        style.innerHTML = `@keyframes flyVegetable {
           0% {
+            left: 25vw;
+            bottom: 10vh;
+            transform: scale(0.5) rotate(-30deg);
+            opacity: 1;
+          }
+          50% {
             left: 50vw;
-            bottom: 0;
-            transform: scale(2) rotate(-30deg);
+            bottom: 50vh;
+            transform: scale(1.5) rotate(20deg);
             opacity: 1;
-          }
-          40% {
-            left: 55vw;
-            bottom: 40vh;
-            transform: scale(2.2) rotate(20deg);
-            opacity: 1;
-          }
-          70% {
-            left: 60vw;
-            bottom: 70vh;
-            transform: scale(1.5) rotate(60deg);
-            opacity: 1;
-          }
-          90% {
-            left: 65vw;
-            bottom: 80vh;
-            transform: scale(1) rotate(120deg);
-            opacity: 0.7;
           }
           100% {
-            left: 70vw;
-            bottom: 90vh;
+            left: 75vw;
+            bottom: 80vh;
             transform: scale(0.5) rotate(180deg);
             opacity: 0;
           }
         }`;
-        style.setAttribute('data-fruit-anim', 'true');
+        style.setAttribute('data-veg-anim', 'true');
         document.head.appendChild(style);
       }
     }
   }, []);
+
   return (
     <div style={{
       position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
-      fontFamily: "Comic Sans MS, cursive, sans-serif",
-      background: finished ? "#FC5A8D" : "#FFF8F0", overflow: "hidden", boxSizing: "border-box",
-      display: "flex", flexDirection: finished ? "column" : "row", alignItems: finished ? "center" : undefined, justifyContent: finished ? "center" : undefined
+      fontFamily: "'Comic Sans MS', 'Chalkboard SE', sans-serif", // Kid-friendly font
+      background: finished ? "#e0f7fa" : "#f0f9e8", // Soft background
+      overflow: "hidden", boxSizing: "border-box",
+      display: "flex", flexDirection: "row"
     }}>
-      {/* Flying Fruit Animation */}
-      {flyingFruit && (
+      {/* Flying Vegetable Animation */}
+      {flyingVegetable && (
         <div
           ref={flyingRef}
-          key={flyingFruit.key}
+          key={flyingVegetable.key}
           style={{
             position: "fixed",
             left: "50vw",
             bottom: 0,
-            fontSize: "7em",
-            zIndex: 1000,
+            width: "200px",
+            height: "200px",
+            zIndex: 2000,
             pointerEvents: "none",
-            animation: "flyFruit 1.2s cubic-bezier(.5,1.5,.5,1) forwards"
+            animation: "flyVegetable 1.2s cubic-bezier(.25, .8, .25, 1) forwards",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            filter: "drop-shadow(0px 10px 20px rgba(0,0,0,0.3))"
           }}
         >
-          {fruits[flyingFruit.idx].icon}
+          <img src={vegetables[flyingVegetable.idx].image} alt="flying vegetable" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         </div>
       )}
-      {/* Sidebar */}
+
+      {/* Left Panel: Voting Grid */}
       {!finished && (
         <div style={{
-          width: "320px", minWidth: "320px", background: "#FFE4B5", padding: "12px 8px 12px 8px",
-          display: "flex", flexDirection: "column", alignItems: "center", borderRight: "6px solid #F8B500", height: "100vh", boxSizing: "border-box", overflowY: "auto"
+          width: "35%", height: "100%", padding: "10px",
+          background: "#fff", borderRight: "8px solid #8BC34A",
+          display: "flex", flexDirection: "column", justifyContent: "center",
+          boxShadow: "5px 0 15px rgba(0,0,0,0.1)", zIndex: 10,
+          boxSizing: "border-box"
         }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
-            {fruits.map((fruit, idx) => (
+          <h2 style={{ textAlign: "center", color: "#558B2F", margin: "0 0 10px 0", fontSize: "clamp(1.5em, 3vh, 2em)", textShadow: "2px 2px 0px #DCEDC8", flexShrink: 0 }}>
+            I like...
+          </h2>
+          <div style={{
+            display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "repeat(5, 1fr)", gap: "10px",
+            height: "100%", overflow: "hidden", // Prevent scrolling
+            minHeight: 0 // Allow grid to shrink
+          }}>
+            {vegetables.map((veg, idx) => (
               <button
-                key={fruit.en}
-                onClick={() => handleFruitClick(idx)}
+                key={veg.en}
+                onClick={() => handleVegetableClick(idx)}
                 style={{
-                  padding: "10px 0", fontSize: "1.1em", fontWeight: "bold",
-                  background: colors[idx], color: "#fff", border: "none", borderRadius: "16px",
-                  width: "100%", cursor: finished ? "not-allowed" : "pointer", boxShadow: "2px 2px 8px #f8b50033",
-                  display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "flex-start", gap: "12px"
+                  background: `linear-gradient(135deg, ${colors[idx]} 0%, #ffffff 150%)`,
+                  border: "4px solid #fff",
+                  borderRadius: "15px",
+                  boxShadow: "0 4px 8px rgba(0,0,0,0.15)",
+                  cursor: "pointer",
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  padding: "5px",
+                  transition: "transform 0.1s active",
+                  position: "relative",
+                  overflow: "hidden",
+                  minWidth: 0, // Allow shrinking
+                  height: "100%" // Fill grid cell
                 }}
-                disabled={finished}
+                onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
+                onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
               >
-                <span style={{ fontSize: "2em", marginRight: "8px" }}>{fruit.icon}</span>
-                <span>{fruit.en}</span>
-                <span style={{ fontSize: "0.95em", color: "#FFF8F0", marginLeft: "8px" }}>{fruit.katakana}</span>
+                <div style={{ height: "55%", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "2px" }}>
+                  <img src={veg.image} alt={veg.en} style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain", filter: "drop-shadow(0 4px 4px rgba(0,0,0,0.2))" }} />
+                </div>
+                <div style={{ textAlign: "center", lineHeight: "1.1", width: "100%" }}>
+                  <div style={{ fontSize: "clamp(1em, 2.5vw, 1.4em)", fontWeight: "bold", color: "#333", textShadow: "1px 1px 0 #fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{veg.en}</div>
+                  <div style={{ fontSize: "clamp(0.8em, 2vw, 1.1em)", color: "#006400", fontWeight: "bold" }}>{veg.katakana}</div>
+                </div>
               </button>
             ))}
           </div>
         </div>
       )}
-      {/* Main Content */}
+
+      {/* Right Panel: Results & Prompt */}
       {!finished && (
-        <div style={{ flex: 1, padding: "32px 48px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", boxSizing: "border-box", overflow: "auto" }}>
-          {/* Prompt */}
-          <div style={{ fontSize: "2.2em", margin: "24px 0 12px 0", color: "#F8B500", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
-            <span style={{ display: "inline-block", marginBottom: "-4px" }}>
-              <span style={{ fontSize: "0.65em", color: "#888", letterSpacing: "1px", position: "relative", top: "0.2em" }}>
-                アイ ライク&nbsp;{fruits[exampleIdx].katakana}
-              </span>
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "-6px" }}>
-              <span style={{ fontWeight: "bold", color: "#FC5A8D", fontSize: "1em", display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ fontSize: "2em" }}>{fruits[exampleIdx].icon}</span>
-                I like {fruits[exampleIdx].en}
-              </span>
-            </span>
+        <div style={{
+          flex: 1, padding: "15px", display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "space-between", height: "100vh",
+          background: "#f1f8e9", minWidth: 0, // Fix for flex child overflow
+          boxSizing: "border-box", overflow: "hidden"
+        }}>
+          {/* Prompt Area - Prominent for ESL practice */}
+          <div style={{
+            background: "#fff", padding: "10px 20px", borderRadius: "20px",
+            boxShadow: "0 6px 12px rgba(0,0,0,0.1)",
+            display: "flex", flexDirection: "column", alignItems: "center",
+            border: "4px solid #8BC34A", marginBottom: "10px", width: "90%",
+            flexShrink: 0 // Don't shrink this
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+              <div style={{ width: "60px", height: "60px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <img src={vegetables[exampleIdx].image} alt={vegetables[exampleIdx].en} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+              </div>
+              <div style={{ textAlign: "left" }}>
+                <div style={{ fontSize: "1.4em", color: "#558B2F" }}>
+                  アイ ライク <span style={{ fontWeight: "bold", color: "#E65100" }}>{vegetables[exampleIdx].katakana}</span>
+                </div>
+                <div style={{ fontSize: "2em", fontWeight: "bold", color: "#33691E", lineHeight: "1" }}>
+                  I like <span style={{ color: "#E65100" }}>{vegetables[exampleIdx].en}</span>
+                </div>
+              </div>
+            </div>
           </div>
-          {/* Graph Type Selector */}
-          <div style={{ marginBottom: "18px", display: "flex", gap: "12px" }}>
-            <button
-              onClick={() => setGraphType("bar")}
-              style={{
-                padding: "10px 24px", fontSize: "1.1em",
-                background: graphType === "bar" ? "#FC5A8D" : "#FFE4B5",
-                color: graphType === "bar" ? "#fff" : "#F8B500", border: "none", borderRadius: "10px", fontWeight: "bold"
-              }}
-              disabled={finished}
-            >Bar Graph</button>
-            <button
-              onClick={() => setGraphType("pie")}
-              style={{
-                padding: "10px 24px", fontSize: "1.1em",
-                background: graphType === "pie" ? "#FC5A8D" : "#FFE4B5",
-                color: graphType === "pie" ? "#fff" : "#F8B500", border: "none", borderRadius: "10px", fontWeight: "bold"
-              }}
-              disabled={finished}
-            >Pie Chart</button>
-          </div>
-          {/* Chart */}
-          <div style={{ width: "900px", height: "400px", background: "#FFF8F0", borderRadius: "32px", padding: "32px", boxShadow: "2px 2px 24px #f8b50022", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {graphType === "bar" ? (
-              <Bar data={chartData} options={{
-                plugins: {
-                  legend: { display: false },
-                  datalabels: {
-                    display: true,
-                    formatter: (value, context) => {
-                      const idx = context.dataIndex;
-                      return fruits[idx].icon;
+
+          {/* Chart Area */}
+          <div style={{
+            flex: 1, width: "100%", background: "#fff", borderRadius: "30px",
+            padding: "15px", boxShadow: "0 8px 20px rgba(0,0,0,0.1)",
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+            position: "relative", minHeight: 0 // Allow shrinking vertically
+          }}>
+            <div style={{ position: "absolute", top: "15px", right: "20px", zIndex: 10, display: "flex", gap: "10px" }}>
+              <button onClick={() => setGraphType("bar")} style={{ padding: "8px 16px", borderRadius: "20px", border: "none", background: graphType === "bar" ? "#8BC34A" : "#eee", color: graphType === "bar" ? "#fff" : "#666", fontWeight: "bold", cursor: "pointer", fontSize: "1.2em" }}>Bar</button>
+              <button onClick={() => setGraphType("pie")} style={{ padding: "8px 16px", borderRadius: "20px", border: "none", background: graphType === "pie" ? "#8BC34A" : "#eee", color: graphType === "pie" ? "#fff" : "#666", fontWeight: "bold", cursor: "pointer", fontSize: "1.2em" }}>Pie</button>
+            </div>
+            <div style={{ width: "100%", height: "100%", padding: "5px", position: "relative" }}>
+              {graphType === "bar" ? (
+                <Bar data={chartData} options={{
+                  plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                      display: true,
+                      anchor: 'end',
+                      align: 'top',
+                      formatter: (value) => value > 0 ? value : "",
+                      font: { size: 32, weight: 'bold' },
+                      color: '#33691E'
                     },
-                    font: { size: 32 },
                   },
-                },
-                scales: { y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 18 } } }, x: { ticks: { font: { size: 18 } } } },
-                responsive: true,
-                maintainAspectRatio: false
-              }} height={400} width={900} />
-            ) : (
-              <Pie data={chartData} options={{
-                plugins: {
-                  legend: { position: "right", labels: { font: { size: 20 } } },
-                  datalabels: {
-                    display: true,
-                    formatter: (value, context) => {
-                      const idx = context.dataIndex;
-                      return fruits[idx].icon;
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      ticks: { stepSize: 1, font: { size: 24 } },
+                      grid: { display: false },
+                      grace: '10%' // Add space at top for labels
                     },
-                    font: { size: 32 },
+                    x: { ticks: { font: { size: 20, weight: 'bold' }, maxRotation: 45, minRotation: 45 } }
                   },
-                },
-                responsive: true,
-                maintainAspectRatio: false
-              }} height={400} width={900} />
-            )}
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  layout: { padding: { top: 40 } } // Add padding for labels
+                }} />
+              ) : (
+                <Pie data={chartData} options={{
+                  plugins: {
+                    legend: { position: "right", labels: { font: { size: 24 } } },
+                    datalabels: {
+                      display: true,
+                      formatter: (value) => value > 0 ? value : "",
+                      font: { size: 32, weight: 'bold' },
+                      color: '#fff',
+                      textShadowBlur: 4,
+                      textShadowColor: '#000'
+                    },
+                  },
+                  responsive: true,
+                  maintainAspectRatio: false
+                }} />
+              )}
+            </div>
           </div>
+
           {/* Finish Button */}
           <button
             onClick={() => setFinished(true)}
             style={{
-              marginTop: "36px", padding: "18px 48px", fontSize: "2em",
-              background: "#FC5A8D", color: "#fff", border: "none", borderRadius: "32px",
-              boxShadow: "2px 2px 16px #f8b50033", cursor: "pointer", fontWeight: "bold"
+              marginTop: "15px", padding: "10px 40px", fontSize: "1.8em",
+              background: "linear-gradient(to bottom, #FF7043, #E64A19)",
+              color: "#fff", border: "none", borderRadius: "50px",
+              boxShadow: "0 6px 0 #BF360C, 0 10px 10px rgba(0,0,0,0.2)",
+              cursor: "pointer", fontWeight: "bold",
+              transition: "transform 0.1s",
+              textTransform: "uppercase", letterSpacing: "2px",
+              flexShrink: 0
             }}
-            disabled={finished}
-          >Finish!</button>
+            onMouseDown={e => { e.currentTarget.style.transform = "translateY(4px)"; e.currentTarget.style.boxShadow = "0 2px 0 #BF360C, 0 4px 4px rgba(0,0,0,0.2)"; }}
+            onMouseUp={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 0 #BF360C, 0 10px 10px rgba(0,0,0,0.2)"; }}
+          >
+            Finish Voting!
+          </button>
         </div>
       )}
+
       {/* Final Results Fullscreen */}
       {finished && (
         <div style={{
-          width: "100vw", height: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#FC5A8D", color: "#fff", position: "absolute", top: 0, left: 0, zIndex: 2000
+          width: "100vw", height: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          background: "radial-gradient(circle, #f1f8e9 0%, #c5e1a5 100%)",
+          color: "#33691E", position: "absolute", top: 0, left: 0, zIndex: 3000
         }}>
           <div style={{
-            fontSize: "3em", marginBottom: "32px", background: "#fffbe6", color: "#FC5A8D", borderRadius: "40px", padding: "40px", boxShadow: "2px 2px 32px #f8b50044", textAlign: "center"
+            fontSize: "2em", marginBottom: "20px", background: "#fff",
+            color: "#33691E", borderRadius: "40px", padding: "30px",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.2)", textAlign: "center",
+            border: "8px solid #8BC34A", maxWidth: "90vw",
+            maxHeight: "80vh", overflow: "auto" // Ensure it doesn't overflow screen
           }}>
             {winners.length === 1 ? (
-              <span>
-                🎉 The most popular fruit is <span style={{ fontSize: "2em" }}>{fruits[winners[0]].icon}</span> <b>{fruits[winners[0]].en}</b> (<span>{fruits[winners[0]].jp}</span>)! 🎉
-              </span>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+                <div style={{ fontSize: "0.8em", color: "#558B2F" }}>The Winner is...</div>
+                <div style={{ width: "200px", height: "200px", display: "flex", alignItems: "center", justifyContent: "center", animation: "popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)" }}>
+                  <img src={vegetables[winners[0]].image} alt={vegetables[winners[0]].en} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.2))" }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: "1.5em", fontWeight: "bold" }}>{vegetables[winners[0]].en}</div>
+                  <div style={{ fontSize: "1em", color: "#E65100" }}>{vegetables[winners[0]].katakana}</div>
+                </div>
+              </div>
             ) : (
-              <span>
-                🎉 It's a draw! The most popular fruits are:<br />
-                {winners.map(idx => (
-                  <span key={idx} style={{ margin: "0 12px", fontSize: "1.5em" }}>
-                    {fruits[idx].icon} <b>{fruits[idx].en}</b> (<span>{fruits[idx].jp}</span>)
-                  </span>
-                ))}
-                🎉
-              </span>
+              <div>
+                <div style={{ fontSize: "0.8em", color: "#558B2F", marginBottom: "15px" }}>It's a Draw!</div>
+                <div style={{ display: "flex", justifyContent: "center", gap: "20px", flexWrap: "wrap" }}>
+                  {winners.map(idx => (
+                    <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "center", animation: "popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)" }}>
+                      <div style={{ width: "150px", height: "150px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "5px" }}>
+                        <img src={vegetables[idx].image} alt={vegetables[idx].en} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", filter: "drop-shadow(0 5px 10px rgba(0,0,0,0.2))" }} />
+                      </div>
+                      <div style={{ fontSize: "0.8em", fontWeight: "bold" }}>{vegetables[idx].en}</div>
+                      <div style={{ fontSize: "0.6em", color: "#E65100" }}>{vegetables[idx].katakana}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
           <button
             onClick={() => {
-              setCounts(Array(fruits.length).fill(0));
+              setCounts(Array(vegetables.length).fill(0));
               setFinished(false);
             }}
             style={{
-              fontSize: "2em", padding: "18px 48px", background: "#fffbe6", color: "#FC5A8D", border: "none", borderRadius: "32px", fontWeight: "bold", boxShadow: "2px 2px 16px #f8b50033", cursor: "pointer"
+              fontSize: "1.5em", padding: "15px 40px", background: "#fff", color: "#33691E",
+              border: "4px solid #33691E", borderRadius: "50px", fontWeight: "bold",
+              boxShadow: "0 10px 20px rgba(0,0,0,0.1)", cursor: "pointer",
+              transition: "all 0.2s"
             }}
-          >Reset</button>
+            onMouseEnter={e => { e.currentTarget.style.background = "#33691E"; e.currentTarget.style.color = "#fff"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#33691E"; }}
+          >
+            Start New Vote
+          </button>
+          <style>{`
+            @keyframes popIn {
+              0% { transform: scale(0); opacity: 0; }
+              100% { transform: scale(1); opacity: 1; }
+            }
+          `}</style>
         </div>
       )}
     </div>
