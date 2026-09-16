@@ -1,5 +1,6 @@
 {
-  "name": "fruits",
+  "name": "universal-poll",
+  "homepage": "https://nagasakimark.github.io/poll",
   "private": true,
   "version": "0.0.0",
   "type": "module",
