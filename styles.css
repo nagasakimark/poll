@@ -1,0 +1,42 @@
+/* Fonts are bundled so the game works offline in the classroom */
+@font-face {
+  font-family: "Luckiest Guy";
+  src: url("fonts/luckiest-guy.woff2") format("woff2");
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "Fredoka";
+  src: url("fonts/fredoka-500.woff2") format("woff2");
+  font-weight: 500;
+  font-display: block;
+}
+@font-face {
+  font-family: "Fredoka";
+  src: url("fonts/fredoka-600.woff2") format("woff2");
+  font-weight: 600;
+  font-display: block;
+}
+@font-face {
+  font-family: "Fredoka";
+  src: url("fonts/fredoka-700.woff2") format("woff2");
+  font-weight: 700;
+  font-display: block;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #f4eeff;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+canvas {
+  display: block;
+  outline: none;
+}
