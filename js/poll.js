@@ -116,7 +116,9 @@ const LoadingScene = {
       new Promise(r => setTimeout(r, 3000))
     ]).catch(() => {}).then(() => {
       Object.values(POLLS).forEach(p => { const it = p.items[0]; if (it.image) Images.load(`img/${it.image}.png`); });
-      Engine.go(MenuScene);
+      // a link like poll/#colors opens that poll directly
+      const want = decodeURIComponent(location.hash.slice(1));
+      if (POLLS[want]) Engine.go(PollScene, { key: want }); else Engine.go(MenuScene);
     });
   },
   draw(ctx) {
