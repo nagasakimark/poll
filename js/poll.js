@@ -27,26 +27,65 @@ function drawItem(ctx, it, cx, cy, size) {
 }
 
 // Scrolling polka-dot background in the poll's colours
+// The scrolling polka-dot background. One tile of dots is drawn once and repeated as a
+// pattern (instead of ~350 separate circles a frame); the soft edge shading is kept as an image.
+const Polka = { tiles: new Map(), shade: null, shadeKey: '' };
+function polkaPattern(ctx, theme, k) {
+  const s = 56;
+  const key = theme.secondary + '@' + k.toFixed(3);
+  let e = Polka.tiles.get(key);
+  if (!e) {
+    // tile: one period across (s) and two rows down (2s); odd rows are shifted by s/2
+    const tw = Math.max(1, Math.round(s * k)), th = 2 * tw;   // whole screen pixels, so the pattern is never resampled
+    const c = document.createElement('canvas'); c.width = tw; c.height = th;
+    const g = c.getContext('2d');
+    g.scale(tw / s, th / (2 * s));
+    g.fillStyle = theme.secondary;
+    for (const [x, y] of [[0, 0], [s, 0], [0, 2 * s], [s, 2 * s], [s / 2, s], [-s / 2, s], [s * 1.5, s]]) {
+      g.beginPath(); g.arc(x, y, 9, 0, TAU); g.fill();
+    }
+    e = { pat: ctx.createPattern(c, 'repeat') };
+    if (Polka.tiles.size > 12) Polka.tiles.delete(Polka.tiles.keys().next().value);
+    Polka.tiles.set(key, e);
+  }
+  return e;
+}
 function drawPolka(ctx, theme, t) {
   const v = Engine.view();
   ctx.fillStyle = theme.background;
   ctx.fillRect(v.x, v.y, v.w, v.h);
-  ctx.fillStyle = theme.secondary;
   const s = 56, off = (t * 14) % s;
-  for (let y = v.y - s; y < v.y + v.h + s; y += s) {
-    for (let x = v.x - s; x < v.x + v.w + s; x += s) {
-      const row = Math.round((y - v.y) / s) % 2;
-      ctx.beginPath();
-      ctx.arc(x + off + (row ? s / 2 : 0), y + off, 9, 0, TAU);
-      ctx.fill();
-    }
+  const m = ctx.getTransform();
+  const k = Math.hypot(m.a, m.b);
+  const e = polkaPattern(ctx, theme, k);
+  // Everything below is in screen pixels, so the tile and the shading are copied pixel for pixel.
+  // Same dot grid as before: dots at (x + off [+ s/2 on odd rows], y + off), rows counted from the view's top.
+  const X0 = m.a * v.x + m.e, Y0 = m.d * v.y + m.f;
+  const W2 = Math.round(v.w * m.a), H2 = Math.round(v.h * m.d);
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  e.pat.setTransform(new DOMMatrix([1, 0, 0, 1, Math.round(X0 + off * k), Math.round(Y0 + off * k)]));
+  ctx.fillStyle = e.pat;
+  ctx.fillRect(Math.round(X0), Math.round(Y0), W2, H2);
+  // soft darkening towards the edges (kept as an image at screen resolution)
+  const sk = W2 + 'x' + H2;
+  if (Polka.shadeKey !== sk) {
+    const c = document.createElement('canvas'); c.width = Math.max(1, W2); c.height = Math.max(1, H2);
+    const g = c.getContext('2d');
+    g.scale(m.a, m.d); g.translate(-v.x, -v.y);
+    const gr = g.createRadialGradient(640, 360, 300, 640, 360, 900);
+    gr.addColorStop(0, 'rgba(255,255,255,0)');
+    gr.addColorStop(1, 'rgba(0,0,0,0.12)');
+    g.fillStyle = gr;
+    g.fillRect(v.x, v.y, v.w, v.h);
+    Polka.shade = c; Polka.shadeKey = sk;
   }
-  const g = ctx.createRadialGradient(640, 360, 300, 640, 360, 900);
-  g.addColorStop(0, 'rgba(255,255,255,0)');
-  g.addColorStop(1, 'rgba(0,0,0,0.12)');
-  ctx.fillStyle = g;
-  ctx.fillRect(v.x, v.y, v.w, v.h);
+  ctx.drawImage(Polka.shade, Math.round(X0), Math.round(Y0));
+  ctx.restore();
 }
+
+// True once an item's picture has loaded and the fonts are ready (part of a stored face's key)
+function imgReady(it) { return !!itemImg(it) && document.fonts.status === "loaded"; }
 
 // Chunky white card with a soft 3D base
 function drawCard(ctx, x, y, w, h, o = {}) {
@@ -590,20 +629,10 @@ const PollScene = {
     const col = BAR_COLORS[c.i % BAR_COLORS.length];
     const lead = this.leader === c.i;
     if (c.hover || lead) Glow.draw(ctx, lead ? '#ffe066' : '#ffffff', 0, 0, w * 0.8, lead ? 0.45 : 0.35);
-    ctx.fillStyle = 'rgba(0,0,0,0.1)';
-    rr(ctx, -w / 2, -h / 2 + 8, w, h, 20); ctx.fill();
-    ctx.fillStyle = shade(col, -0.2);
-    rr(ctx, -w / 2, -h / 2 + 5, w, h, 20); ctx.fill();
-    ctx.fillStyle = '#fff';
-    rr(ctx, -w / 2, -h / 2, w, h, 20); ctx.fill();
-    ctx.fillStyle = col;
-    rr(ctx, -w / 2, -h / 2, w, 7, 4); ctx.fill();
-    const imgSize = Math.min(w * 0.6, h * 0.52);
-    drawItem(ctx, c.it, 0, -h * 0.14 + (c.hover ? Math.sin(t * 9) * 3 : 0), imgSize);
-    txt(ctx, c.it.en, 0, h * 0.24, { size: Math.min(24, h * 0.17), font: FONT_ROUND, fill: '#333', shadow: false, maxW: w - 14 });
-    txt(ctx, c.it.katakana, 0, h * 0.39, { size: Math.min(15, h * 0.11), font: FONT_JP, weight: '700', fill: th.primary, shadow: false, maxW: w - 14 });
-    // key hint + vote count badge
-    txt(ctx, VOTE_KEYS[c.i] || '', -w / 2 + 16, -h / 2 + 20, { size: 14, font: FONT_ROUND, fill: 'rgba(0,0,0,0.25)', shadow: false });
+    const face = g => this.drawCellFace(g, c, t, col);
+    if (c.hover || Math.abs(s - 1) > 1e-4) face(ctx);       // moving: draw it live
+    else Faces.draw(ctx, c, [w, h, col, c.it.en, th.primary, c.i, imgReady(c.it)].join('|'), -w / 2 - 4, -h / 2 - 4, w + 8, h + 16, face);
+    // vote count badge
     const v = this.votes[c.i];
     if (v > 0) {
       const bp = this.bars[c.i].pop.v;
@@ -618,6 +647,26 @@ const PollScene = {
       ctx.restore();
     }
     ctx.restore();
+  },
+
+  // The card itself (everything that doesn't change while it sits still)
+  drawCellFace(ctx, c, t, col) {
+    const th = this.theme;
+    const w = c.w, h = c.h;
+    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+    rr(ctx, -w / 2, -h / 2 + 8, w, h, 20); ctx.fill();
+    ctx.fillStyle = shade(col, -0.2);
+    rr(ctx, -w / 2, -h / 2 + 5, w, h, 20); ctx.fill();
+    ctx.fillStyle = '#fff';
+    rr(ctx, -w / 2, -h / 2, w, h, 20); ctx.fill();
+    ctx.fillStyle = col;
+    rr(ctx, -w / 2, -h / 2, w, 7, 4); ctx.fill();
+    const imgSize = Math.min(w * 0.6, h * 0.52);
+    drawItem(ctx, c.it, 0, -h * 0.14 + (c.hover ? Math.sin(t * 9) * 3 : 0), imgSize);
+    txt(ctx, c.it.en, 0, h * 0.24, { size: Math.min(24, h * 0.17), font: FONT_ROUND, fill: '#333', shadow: false, maxW: w - 14 });
+    txt(ctx, c.it.katakana, 0, h * 0.39, { size: Math.min(15, h * 0.11), font: FONT_JP, weight: '700', fill: th.primary, shadow: false, maxW: w - 14 });
+    // key hint + vote count badge
+    txt(ctx, VOTE_KEYS[c.i] || '', -w / 2 + 16, -h / 2 + 20, { size: 14, font: FONT_ROUND, fill: 'rgba(0,0,0,0.25)', shadow: false });
   },
 
   drawPrompt(ctx, t) {
